@@ -1,5 +1,5 @@
-github.com/ArthurWerle/events v0.0.0-20260709124336-037114df85d5 h1:Zn869ZD+lIYGmsH3bx6Pahn1vbL8wSJImiwKytAdR7A=
-github.com/ArthurWerle/events v0.0.0-20260709124336-037114df85d5/go.mod h1:3IIevUjVKawIpTpEznJmV6KssMxtgDT3dLIFnajJVDM=
+github.com/ArthurWerle/events v0.1.0 h1:2eVXkc4tVLPR+gifROWcLIztQ7Mf9iDiPFKu66vi2FQ=
+github.com/ArthurWerle/events v0.1.0/go.mod h1:3IIevUjVKawIpTpEznJmV6KssMxtgDT3dLIFnajJVDM=
 github.com/bytedance/gopkg v0.1.3 h1:TPBSwH8RsouGCBcMBktLt1AymVo2TVsBVCY4b6TnZ/M=
 github.com/bytedance/gopkg v0.1.3/go.mod h1:576VvJ+eJgyCzdjS+c4+77QF3p7ubbtiKARP3TxducM=
 github.com/bytedance/sonic v1.15.0 h1:/PXeWFaR5ElNcVE84U0dOHjiMHQOwNIx3K4ymzh/uSE=

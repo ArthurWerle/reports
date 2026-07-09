@@ -3,7 +3,7 @@ module github.com/ArthurWerle/reports
 go 1.25.0
 
 require (
-	github.com/ArthurWerle/events v0.0.0-20260709124336-037114df85d5
+	github.com/ArthurWerle/events v0.1.0
 	github.com/gin-contrib/cors v1.7.7
 	github.com/gin-gonic/gin v1.12.0
 	github.com/wcharczuk/go-chart/v2 v2.1.2
