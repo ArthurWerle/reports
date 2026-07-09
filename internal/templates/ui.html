@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #1f2933;
+      padding: 24px 16px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 { color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.25); margin: 0 0 4px; }
+    .subtitle { color: rgba(255,255,255,0.85); margin-bottom: 24px; }
+    .card {
+      background: #fff; border-radius: 12px; padding: 22px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15); margin-bottom: 20px;
+    }
+    .card h2 { margin: 0 0 16px; font-size: 18px; }
+    label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #7b8794; margin: 10px 0 4px; }
+    input[type=text], input[type=number] {
+      width: 100%; padding: 9px 11px; border: 1px solid #cbd2d9; border-radius: 8px; font-size: 14px;
+    }
+    .row { display: flex; gap: 14px; flex-wrap: wrap; }
+    .row > div { flex: 1; min-width: 120px; }
+    .report-block { border: 1px solid #e4e7eb; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff; border: none; border-radius: 8px; padding: 9px 16px; font-size: 14px;
+      cursor: pointer; margin-top: 12px; margin-right: 8px;
+    }
+    .btn.secondary { background: #e4e7eb; color: #1f2933; }
+    .btn:hover { opacity: 0.92; }
+    .inline { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #eef1f4; }
+    th { font-size: 12px; text-transform: uppercase; color: #7b8794; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .badge.pending { background: #fff3cd; color: #856404; }
+    .badge.running { background: #cfe2ff; color: #084298; }
+    .badge.success { background: #d1e7dd; color: #0f5132; }
+    .badge.failed  { background: #f8d7da; color: #842029; }
+    .muted { color: #9aa5b1; font-size: 13px; }
+    a { color: #5a4bd0; }
+    .err { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Reports</h1>
+    <div class="subtitle">Monthly financial report configuration and run history.</div>
+
+    <div class="card">
+      <h2>Report configs</h2>
+      <div id="reports"></div>
+      <hr style="border:none;border-top:1px solid #eef1f4;margin:18px 0;">
+      <h2>Add a report</h2>
+      <div class="row">
+        <div><label>Name</label><input type="text" id="new-name" value="Monthly report"></div>
+        <div><label>Day of month (1-28)</label><input type="number" id="new-day" min="1" max="28" value="1"></div>
+        <div><label>Hour (0-23)</label><input type="number" id="new-hour" min="0" max="23" value="8"></div>
+      </div>
+      <label>Recipients (comma-separated)</label>
+      <input type="text" id="new-recipients" placeholder="you@example.com, partner@example.com">
+      <button class="btn" onclick="createReport()">Add report</button>
+    </div>
+
+    <div class="card">
+      <h2>Executions</h2>
+      <div id="exec-status" class="muted"></div>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Period</th><th>Trigger</th><th>Status</th><th>Duration</th><th>Email</th><th>Error</th><th>Report</th></tr>
+        </thead>
+        <tbody id="executions"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const api = (path, opts) => fetch(path, opts).then(r => {
+      if (!r.ok) return r.text().then(t => { throw new Error(t || r.status); });
+      return r.status === 204 ? null : r.json();
+    });
+
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+        { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]
+      ));
+    }
+
+    async function loadReports() {
+      const reports = await api('/api/v1/reports');
+      const container = document.getElementById('reports');
+      container.innerHTML = '';
+      reports.forEach(rep => {
+        const div = document.createElement('div');
+        div.className = 'report-block';
+        div.innerHTML = `
+          <div class="row">
+            <div><label>Name</label><input type="text" id="name-${rep.id}" value="${esc(rep.name)}"></div>
+            <div><label>Day of month</label><input type="number" id="day-${rep.id}" min="1" max="28" value="${rep.day_of_month}"></div>
+            <div><label>Hour</label><input type="number" id="hour-${rep.id}" min="0" max="23" value="${rep.hour}"></div>
+          </div>
+          <label>Recipients (comma-separated)</label>
+          <input type="text" id="recipients-${rep.id}" value="${esc(rep.recipients)}">
+          <div class="inline">
+            <input type="checkbox" id="enabled-${rep.id}" ${rep.enabled ? 'checked' : ''}>
+            <label style="margin:0;">Enabled</label>
+          </div>
+          <div>
+            <button class="btn" onclick="saveReport(${rep.id})">Save</button>
+            <button class="btn secondary" onclick="runNow(${rep.id})">Run now</button>
+            <button class="btn secondary" onclick="deleteReport(${rep.id})">Delete</button>
+          </div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function reportBody(prefix) {
+      return {
+        name: document.getElementById(prefix + 'name').value,
+        day_of_month: parseInt(document.getElementById(prefix + 'day').value, 10),
+        hour: parseInt(document.getElementById(prefix + 'hour').value, 10),
+        recipients: document.getElementById(prefix + 'recipients').value,
+      };
+    }
+
+    async function createReport() {
+      const body = {
+        name: document.getElementById('new-name').value,
+        day_of_month: parseInt(document.getElementById('new-day').value, 10),
+        hour: parseInt(document.getElementById('new-hour').value, 10),
+        recipients: document.getElementById('new-recipients').value,
+        enabled: true,
+      };
+      await api('/api/v1/reports', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      loadReports();
+    }
+
+    async function saveReport(id) {
+      const body = {
+        name: document.getElementById('name-' + id).value,
+        day_of_month: parseInt(document.getElementById('day-' + id).value, 10),
+        hour: parseInt(document.getElementById('hour-' + id).value, 10),
+        recipients: document.getElementById('recipients-' + id).value,
+        enabled: document.getElementById('enabled-' + id).checked,
+      };
+      await api('/api/v1/reports/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      loadReports();
+    }
+
+    async function deleteReport(id) {
+      if (!confirm('Delete this report and its executions?')) return;
+      await api('/api/v1/reports/' + id, { method: 'DELETE' });
+      loadReports();
+      loadExecutions();
+    }
+
+    async function runNow(id) {
+      await api('/api/v1/reports/' + id + '/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      loadExecutions();
+    }
+
+    function fmtDuration(ms) {
+      if (ms == null) return '—';
+      if (ms < 1000) return ms + 'ms';
+      return (ms / 1000).toFixed(1) + 's';
+    }
+
+    async function loadExecutions() {
+      const execs = await api('/api/v1/executions?limit=50');
+      const tbody = document.getElementById('executions');
+      tbody.innerHTML = '';
+      let active = false;
+      execs.forEach(e => {
+        if (e.status === 'pending' || e.status === 'running') active = true;
+        const period = String(e.period_year) + '-' + String(e.period_month).padStart(2, '0');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${e.id}</td>
+          <td>${period}</td>
+          <td>${esc(e.trigger)}</td>
+          <td><span class="badge ${esc(e.status)}">${esc(e.status)}</span></td>
+          <td>${fmtDuration(e.duration_ms)}</td>
+          <td>${e.email_sent_at ? '✓' : '—'}</td>
+          <td class="err" title="${esc(e.error_message)}">${esc(e.error_message || '')}</td>
+          <td><a href="/api/v1/executions/${e.id}/html" target="_blank">View</a></td>`;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('exec-status').textContent = active ? 'Refreshing while runs are in progress…' : '';
+      return active;
+    }
+
+    async function refreshLoop() {
+      try {
+        const active = await loadExecutions();
+        if (active) setTimeout(refreshLoop, 10000);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadReports();
+    refreshLoop();
+  </script>
+</body>
+</html>
