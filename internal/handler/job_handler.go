@@ -48,9 +48,12 @@ func (h *JobHandler) Generate(c *gin.Context) {
 		return
 	}
 
+	h.logger.Info("job: callback received", "execution_id", exec.ID, "status", exec.Status)
+
 	switch exec.Status {
 	case model.StatusRunning, model.StatusSuccess:
 		// Idempotent against redelivery — already handled or in flight.
+		h.logger.Info("job: idempotent no-op", "execution_id", exec.ID, "status", exec.Status)
 		c.Status(http.StatusOK)
 		return
 	}
@@ -69,8 +72,12 @@ func (h *JobHandler) Generate(c *gin.Context) {
 	}
 
 	if err := h.generator.Generate(exec.ID); err != nil {
+		h.logger.Error("job: generation failed",
+			"execution_id", exec.ID, "duration", time.Since(now).String(), "error", err)
 		c.String(http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.logger.Info("job: generation succeeded, email sent",
+		"execution_id", exec.ID, "duration", time.Since(now).String())
 	c.Status(http.StatusOK)
 }
