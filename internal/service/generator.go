@@ -12,13 +12,19 @@ import (
 	"github.com/ArthurWerle/reports/internal/repository"
 )
 
+// EmailSender delivers the report email. *Mailer is the real implementation;
+// a fake is injected in tests.
+type EmailSender interface {
+	Send(subject, htmlBody string, recipients []string, charts map[string][]byte) error
+}
+
 // Generator runs the report pipeline for a single execution.
 type Generator struct {
 	execRepo   repository.ExecutionRepository
 	reportRepo repository.ReportRepository
 	tx         *TransactionsClient
 	insights   *InsightsClient
-	mailer     *Mailer
+	mailer     EmailSender
 	cfg        config.Config
 	loc        *time.Location
 	logger     *slog.Logger
@@ -30,7 +36,7 @@ func NewGenerator(
 	reportRepo repository.ReportRepository,
 	tx *TransactionsClient,
 	insights *InsightsClient,
-	mailer *Mailer,
+	mailer EmailSender,
 	cfg config.Config,
 	loc *time.Location,
 	logger *slog.Logger,
@@ -48,14 +54,16 @@ func NewGenerator(
 	}
 }
 
-// Generate runs the full pipeline for the execution id. It is meant to run in a
-// goroutine; all outcomes (success and failure) are persisted on the execution
-// row. Panics are recovered into a failed status.
-func (g *Generator) Generate(execID int64) {
+// Generate runs the full pipeline for the execution id. All outcomes (success
+// and failure) are persisted on the execution row. The returned error is nil
+// only when the report was generated AND the email was actually sent, so the
+// caller can propagate the real outcome to the events service. Panics are
+// recovered into a failed status.
+func (g *Generator) Generate(execID int64) (retErr error) {
 	exec, err := g.execRepo.Get(execID)
 	if err != nil {
 		g.logger.Error("generator: load execution", "execution_id", execID, "error", err)
-		return
+		return fmt.Errorf("load execution %d: %w", execID, err)
 	}
 
 	started := g.now()
@@ -66,7 +74,9 @@ func (g *Generator) Generate(execID int64) {
 	defer func() {
 		if r := recover(); r != nil {
 			g.logger.Error("generator: panic", "execution_id", execID, "panic", r)
-			g.finalize(exec, started, model.StatusFailed, fmt.Sprintf("panic: %v", r))
+			msg := fmt.Sprintf("panic: %v", r)
+			g.finalize(exec, started, model.StatusFailed, msg)
+			retErr = fmt.Errorf("%s", msg)
 		}
 	}()
 
@@ -78,8 +88,7 @@ func (g *Generator) Generate(execID int64) {
 	// 1. Fetch aggregated numbers.
 	data, err := g.fetch(ctx, year, month)
 	if err != nil {
-		g.finalize(exec, started, model.StatusFailed, "fetch transactions data: "+err.Error())
-		return
+		return g.fail(exec, started, "fetch transactions data: "+err.Error())
 	}
 
 	// 2. Insights (degrade gracefully on failure).
@@ -97,8 +106,7 @@ func (g *Generator) Generate(execID int64) {
 	// 4. HTML — web mode (stored) uses HTTP chart URLs.
 	webHTML, err := BuildReportHTML(data, ins, exec.ID, g.cfg.Report.Currency, false, g.now())
 	if err != nil {
-		g.finalize(exec, started, model.StatusFailed, "render web html: "+err.Error())
-		return
+		return g.fail(exec, started, "render web html: "+err.Error())
 	}
 	exec.HTML = &webHTML
 	if ins != nil {
@@ -114,35 +122,39 @@ func (g *Generator) Generate(execID int64) {
 			continue
 		}
 		if err := g.execRepo.SaveChart(&model.ReportChart{ExecutionID: exec.ID, Name: name, Image: png}); err != nil {
-			g.finalize(exec, started, model.StatusFailed, "persist chart "+name+": "+err.Error())
-			return
+			return g.fail(exec, started, "persist chart "+name+": "+err.Error())
 		}
 	}
 
-	// 5. Email.
+	// 5. Email. Sending is mandatory for success: an execution (and the events
+	// job behind it) is only "done" when the email actually went out.
 	recipients := g.recipientsFor(exec.ReportID)
-	if g.cfg.SMTP.Configured() && len(recipients) > 0 {
-		emailHTML, err := BuildReportHTML(data, ins, exec.ID, g.cfg.Report.Currency, true, g.now())
-		if err != nil {
-			g.finalize(exec, started, model.StatusFailed, "render email html: "+err.Error())
-			return
-		}
-		subject := "Monthly report — " + PeriodLabel(year, month)
-		if err := g.mailer.Send(subject, emailHTML, recipients, data.Charts); err != nil {
-			g.finalize(exec, started, model.StatusFailed, "send email: "+err.Error())
-			return
-		}
-		sentAt := g.now()
-		exec.EmailSentAt = &sentAt
-	} else {
-		g.logger.Warn("generator: email skipped",
-			"execution_id", execID,
-			"smtp_configured", g.cfg.SMTP.Configured(),
-			"recipients", len(recipients))
+	if !g.cfg.SMTP.Configured() {
+		return g.fail(exec, started, "email not sent: SMTP not configured")
 	}
+	if len(recipients) == 0 {
+		return g.fail(exec, started, "email not sent: report has no recipients")
+	}
+	emailHTML, err := BuildReportHTML(data, ins, exec.ID, g.cfg.Report.Currency, true, g.now())
+	if err != nil {
+		return g.fail(exec, started, "render email html: "+err.Error())
+	}
+	subject := "Monthly report — " + PeriodLabel(year, month)
+	if err := g.mailer.Send(subject, emailHTML, recipients, data.Charts); err != nil {
+		return g.fail(exec, started, "send email: "+err.Error())
+	}
+	sentAt := g.now()
+	exec.EmailSentAt = &sentAt
 
 	// 6. Finalize success (degradation, if any, recorded but not fatal).
 	g.finalize(exec, started, model.StatusSuccess, degradedMsg)
+	return nil
+}
+
+// fail finalizes the execution as failed and returns the message as an error.
+func (g *Generator) fail(exec *model.ReportExecution, started time.Time, message string) error {
+	g.finalize(exec, started, model.StatusFailed, message)
+	return fmt.Errorf("%s", message)
 }
 
 func (g *Generator) fetch(ctx context.Context, year, month int) (ReportData, error) {

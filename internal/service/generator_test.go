@@ -73,19 +73,30 @@ func newAIServer(fail bool) *httptest.Server {
 	}))
 }
 
-func newTestGenerator(t *testing.T, txURL, aiURL string) (*Generator, *fakeExecRepo) {
+// fakeMailer records sends and always succeeds.
+type fakeMailer struct{ sent int }
+
+func (f *fakeMailer) Send(subject, htmlBody string, recipients []string, charts map[string][]byte) error {
+	f.sent++
+	return nil
+}
+
+func newTestGenerator(t *testing.T, txURL, aiURL string) (*Generator, *fakeExecRepo, *fakeMailer) {
 	t.Helper()
 	rr := newFakeReportRepo()
-	rr.add(&model.Report{Name: "m", DayOfMonth: 1, Hour: 8, Recipients: "", Enabled: true})
+	rr.add(&model.Report{Name: "m", DayOfMonth: 1, Hour: 8, Recipients: "a@b.com", Enabled: true})
 	er := newFakeExecRepo()
 
 	cfg := config.Config{}
 	cfg.Report.Currency = "BRL"
 	cfg.Report.Language = "en"
-	// SMTP intentionally unconfigured → email is skipped.
+	cfg.SMTP.Host = "smtp.test"
+	cfg.SMTP.Port = "587"
+	cfg.SMTP.From = "reports@test"
 
-	g := NewGenerator(er, rr, NewTransactionsClient(txURL), NewInsightsClient(aiURL), NewMailer(cfg.SMTP), cfg, time.UTC, testLogger())
-	return g, er
+	mailer := &fakeMailer{}
+	g := NewGenerator(er, rr, NewTransactionsClient(txURL), NewInsightsClient(aiURL), mailer, cfg, time.UTC, testLogger())
+	return g, er, mailer
 }
 
 func seedRunningExec(er *fakeExecRepo) int64 {
@@ -104,9 +115,11 @@ func TestGeneratorSuccess(t *testing.T) {
 	ai := newAIServer(false)
 	defer ai.Close()
 
-	g, er := newTestGenerator(t, tx.URL, ai.URL)
+	g, er, mailer := newTestGenerator(t, tx.URL, ai.URL)
 	id := seedRunningExec(er)
-	g.Generate(id)
+	if err := g.Generate(id); err != nil {
+		t.Fatalf("Generate returned error: %v", err)
+	}
 
 	got, _ := er.Get(id)
 	if got.Status != model.StatusSuccess {
@@ -121,8 +134,11 @@ func TestGeneratorSuccess(t *testing.T) {
 	if got.ErrorMessage != nil {
 		t.Errorf("expected no error message, got %q", *got.ErrorMessage)
 	}
-	if got.EmailSentAt != nil {
-		t.Errorf("email should be skipped (SMTP unconfigured)")
+	if mailer.sent != 1 {
+		t.Errorf("expected 1 email sent, got %d", mailer.sent)
+	}
+	if got.EmailSentAt == nil {
+		t.Errorf("expected email_sent_at set")
 	}
 	if got.DurationMs == nil {
 		t.Errorf("expected duration recorded")
@@ -138,9 +154,11 @@ func TestGeneratorTransactionsDown(t *testing.T) {
 	ai := newAIServer(false)
 	defer ai.Close()
 
-	g, er := newTestGenerator(t, tx.URL, ai.URL)
+	g, er, _ := newTestGenerator(t, tx.URL, ai.URL)
 	id := seedRunningExec(er)
-	g.Generate(id)
+	if err := g.Generate(id); err == nil {
+		t.Fatalf("Generate should return error when transactions are down")
+	}
 
 	got, _ := er.Get(id)
 	if got.Status != model.StatusFailed {
@@ -157,9 +175,11 @@ func TestGeneratorInsightsDownDegrades(t *testing.T) {
 	ai := newAIServer(true) // llm 500
 	defer ai.Close()
 
-	g, er := newTestGenerator(t, tx.URL, ai.URL)
+	g, er, _ := newTestGenerator(t, tx.URL, ai.URL)
 	id := seedRunningExec(er)
-	g.Generate(id)
+	if err := g.Generate(id); err != nil {
+		t.Fatalf("Generate returned error: %v", err)
+	}
 
 	got, _ := er.Get(id)
 	if got.Status != model.StatusSuccess {
@@ -182,9 +202,11 @@ func TestGeneratorEmptyMonthSkipsCharts(t *testing.T) {
 	ai := newAIServer(false)
 	defer ai.Close()
 
-	g, er := newTestGenerator(t, tx.URL, ai.URL)
+	g, er, _ := newTestGenerator(t, tx.URL, ai.URL)
 	id := seedRunningExec(er)
-	g.Generate(id)
+	if err := g.Generate(id); err != nil {
+		t.Fatalf("Generate returned error: %v", err)
+	}
 
 	got, _ := er.Get(id)
 	if got.Status != model.StatusSuccess {
@@ -195,5 +217,60 @@ func TestGeneratorEmptyMonthSkipsCharts(t *testing.T) {
 	}
 	if got.HTML == nil {
 		t.Errorf("expected HTML even with no charts")
+	}
+}
+
+func TestGeneratorEmailSkippedIsFailure(t *testing.T) {
+	tx := newTxServer(false, false)
+	defer tx.Close()
+	ai := newAIServer(false)
+	defer ai.Close()
+
+	g, er, mailer := newTestGenerator(t, tx.URL, ai.URL)
+	g.cfg.SMTP = config.SMTPConfig{} // unconfigured → email cannot be sent
+	id := seedRunningExec(er)
+	if err := g.Generate(id); err == nil {
+		t.Fatalf("Generate should return error when email cannot be sent")
+	}
+
+	got, _ := er.Get(id)
+	if got.Status != model.StatusFailed {
+		t.Fatalf("status = %q, want failed", got.Status)
+	}
+	if got.ErrorMessage == nil || !strings.Contains(*got.ErrorMessage, "email not sent") {
+		t.Errorf("error message = %v, want email-not-sent", got.ErrorMessage)
+	}
+	if mailer.sent != 0 {
+		t.Errorf("no email should be sent, got %d", mailer.sent)
+	}
+	if got.EmailSentAt != nil {
+		t.Errorf("email_sent_at must stay nil")
+	}
+	if got.HTML == nil {
+		t.Errorf("report HTML should still be stored for the web UI")
+	}
+}
+
+func TestGeneratorNoRecipientsIsFailure(t *testing.T) {
+	tx := newTxServer(false, false)
+	defer tx.Close()
+	ai := newAIServer(false)
+	defer ai.Close()
+
+	g, er, _ := newTestGenerator(t, tx.URL, ai.URL)
+	rr := newFakeReportRepo()
+	rr.add(&model.Report{Name: "m", DayOfMonth: 1, Hour: 8, Recipients: "", Enabled: true})
+	g.reportRepo = rr
+	id := seedRunningExec(er)
+	if err := g.Generate(id); err == nil {
+		t.Fatalf("Generate should return error when report has no recipients")
+	}
+
+	got, _ := er.Get(id)
+	if got.Status != model.StatusFailed {
+		t.Fatalf("status = %q, want failed", got.Status)
+	}
+	if got.ErrorMessage == nil || !strings.Contains(*got.ErrorMessage, "no recipients") {
+		t.Errorf("error message = %v, want no-recipients", got.ErrorMessage)
 	}
 }
