@@ -84,15 +84,15 @@ func TestCallbackIdempotentForSuccess(t *testing.T) {
 func TestCallbackUnknownExecution(t *testing.T) {
 	repo := &stubExecRepo{execs: map[int64]*model.ReportExecution{}}
 	h := NewJobHandler(repo, nil, discardLogger())
-	if code := callGenerate(h, `{"execution_id":999}`); code != 200 {
-		t.Errorf("unknown id should return 200, got %d", code)
+	if code := callGenerate(h, `{"execution_id":999}`); code != 404 {
+		t.Errorf("unknown id should return 404, got %d", code)
 	}
 }
 
 func TestCallbackBadPayload(t *testing.T) {
 	repo := &stubExecRepo{execs: map[int64]*model.ReportExecution{}}
 	h := NewJobHandler(repo, nil, discardLogger())
-	if code := callGenerate(h, `not-json`); code != 200 {
-		t.Errorf("bad payload should return 200, got %d", code)
+	if code := callGenerate(h, `not-json`); code != 400 {
+		t.Errorf("bad payload should return 400, got %d", code)
 	}
 }

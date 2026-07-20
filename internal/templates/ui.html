@@ -197,17 +197,17 @@
       return active;
     }
 
-    async function refreshLoop() {
+    async function refreshExecutions() {
       try {
-        const active = await loadExecutions();
-        if (active) setTimeout(refreshLoop, 10000);
+        await loadExecutions();
       } catch (err) {
         console.error(err);
       }
     }
 
     loadReports();
-    refreshLoop();
+    refreshExecutions();
+    setInterval(refreshExecutions, 5000);
   </script>
 </body>
 </html>

@@ -25,9 +25,11 @@ func NewJobHandler(execRepo repository.ExecutionRepository, generator *service.G
 // Generate is the events delivery callback:
 // GET /api/v1/jobs/generate?job_type=generate-report&payload={"execution_id":N}
 //
-// It always returns 200 so the events retry mechanism (which only covers
-// delivery) does not loop forever; generation failures are recorded on the
-// execution row instead. Redelivery while running/success is a no-op.
+// It runs the full pipeline synchronously and returns 200 only when the report
+// was generated and the email was sent, so the events service marks the job
+// "done" only on real completion. Any failure returns a non-2xx, which events
+// retries and ultimately records as "failed". Redelivery while running/success
+// is a 200 no-op; a failed execution is re-run (that is the retry path).
 func (h *JobHandler) Generate(c *gin.Context) {
 	payload := c.Query("payload")
 	var p struct {
@@ -35,14 +37,14 @@ func (h *JobHandler) Generate(c *gin.Context) {
 	}
 	if err := json.Unmarshal([]byte(payload), &p); err != nil {
 		h.logger.Warn("job: invalid payload", "payload", payload, "error", err)
-		c.Status(http.StatusOK)
+		c.String(http.StatusBadRequest, "invalid payload")
 		return
 	}
 
 	exec, err := h.execRepo.Get(p.ExecutionID)
 	if err != nil {
 		h.logger.Warn("job: unknown execution", "execution_id", p.ExecutionID, "error", err)
-		c.Status(http.StatusOK)
+		c.String(http.StatusNotFound, "unknown execution")
 		return
 	}
 
@@ -53,7 +55,7 @@ func (h *JobHandler) Generate(c *gin.Context) {
 		return
 	}
 
-	// pending or failed → claim it and generate in the background.
+	// pending or failed → claim it and generate.
 	now := time.Now()
 	exec.Status = model.StatusRunning
 	exec.StartedAt = &now
@@ -62,10 +64,13 @@ func (h *JobHandler) Generate(c *gin.Context) {
 	exec.DurationMs = nil
 	if err := h.execRepo.Update(exec); err != nil {
 		h.logger.Error("job: mark running", "execution_id", exec.ID, "error", err)
-		c.Status(http.StatusOK)
+		c.String(http.StatusInternalServerError, "mark running failed")
 		return
 	}
 
-	go h.generator.Generate(exec.ID)
+	if err := h.generator.Generate(exec.ID); err != nil {
+		c.String(http.StatusInternalServerError, err.Error())
+		return
+	}
 	c.Status(http.StatusOK)
 }
