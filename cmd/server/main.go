@@ -116,6 +116,22 @@ func setupRouter(
 
 	router := gin.New()
 
+	router.Use(gin.Recovery())
+	// Request log via slog; skip the UI's 5s executions poll to avoid noise.
+	router.Use(func(c *gin.Context) {
+		if c.FullPath() == "/api/v1/executions" || c.FullPath() == "/health" {
+			c.Next()
+			return
+		}
+		start := time.Now()
+		c.Next()
+		logger.Info("http request",
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+			"status", c.Writer.Status(),
+			"duration", time.Since(start).String())
+	})
+
 	router.Use(cors.New(cors.Config{
 		AllowAllOrigins:  true,
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
