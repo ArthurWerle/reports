@@ -3,33 +3,34 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
   <title>Monthly report — {{ .Period }}</title>
 </head>
-<body style="margin:0; padding:0; background-color:#f2f3f5;">
-  <div style="max-width:640px; margin:0 auto; padding:24px 16px; font-family:Arial,Helvetica,sans-serif; color:#1f2933;">
+<body style="margin:0; padding:0; background-color:#fafafa; -webkit-font-smoothing:antialiased;">
+  <div style="max-width:600px; margin:0 auto; padding:32px 16px; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:#0a0a0a;">
 
     <!-- Header -->
-    <div style="background:#ffffff; border-radius:12px; padding:24px; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-      <div style="font-size:13px; letter-spacing:1px; text-transform:uppercase; color:#7b8794; margin-bottom:8px;">Monthly report</div>
-      <div style="font-size:22px; font-weight:bold; color:#111827; margin-bottom:12px;">{{ .Period }}</div>
-      <div style="font-size:16px; line-height:1.5; color:#334155;">{{ .Headline }}</div>
+    <div style="background:#ffffff; border:1px solid #eaeaea; border-radius:12px; padding:28px 24px;">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:#999999; font-weight:600; margin-bottom:10px;">Monthly report</div>
+      <div style="font-size:26px; font-weight:600; letter-spacing:-0.02em; color:#0a0a0a; line-height:1.15;">{{ .Period }}</div>
+      <div style="font-size:15px; line-height:1.6; color:#525252; margin-top:12px;">{{ .Headline }}</div>
     </div>
 
     <!-- Overview cards -->
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px; border-collapse:separate; border-spacing:0;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px; border-collapse:separate; border-spacing:0;">
       <tr>
-        <td width="50%" valign="top" style="padding-right:8px;">
-          <div style="background:#ffffff; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-            <div style="font-size:13px; color:#7b8794; text-transform:uppercase; letter-spacing:0.5px;">{{ .Income.Label }}</div>
-            <div style="font-size:22px; font-weight:bold; color:#111827; margin-top:6px;">{{ .Income.Amount }}</div>
-            {{ if .Income.HasDelta }}<div style="font-size:13px; color:#52606d; margin-top:4px;">{{ .Income.DeltaText }}</div>{{ else }}<div style="font-size:13px; color:#9aa5b1; margin-top:4px;">no prior month</div>{{ end }}
+        <td width="50%" valign="top" style="padding-right:6px;">
+          <div style="background:#ffffff; border:1px solid #eaeaea; border-radius:12px; padding:18px 20px;">
+            <div style="font-size:11px; color:#999999; text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">{{ .Income.Label }}</div>
+            <div style="font-size:22px; font-weight:600; letter-spacing:-0.02em; color:#0a0a0a; margin-top:8px; font-family:'SF Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">{{ .Income.Amount }}</div>
+            {{ if .Income.HasDelta }}<div style="font-size:12px; font-weight:500; margin-top:6px; {{ if .Income.Up }}color:#16a34a{{ else }}color:#dc2626{{ end }};">{{ .Income.DeltaText }}</div>{{ else }}<div style="font-size:12px; color:#a3a3a3; margin-top:6px;">no prior month</div>{{ end }}
           </div>
         </td>
-        <td width="50%" valign="top" style="padding-left:8px;">
-          <div style="background:#ffffff; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-            <div style="font-size:13px; color:#7b8794; text-transform:uppercase; letter-spacing:0.5px;">{{ .Expense.Label }}</div>
-            <div style="font-size:22px; font-weight:bold; color:#111827; margin-top:6px;">{{ .Expense.Amount }}</div>
-            {{ if .Expense.HasDelta }}<div style="font-size:13px; color:#52606d; margin-top:4px;">{{ .Expense.DeltaText }}</div>{{ else }}<div style="font-size:13px; color:#9aa5b1; margin-top:4px;">no prior month</div>{{ end }}
+        <td width="50%" valign="top" style="padding-left:6px;">
+          <div style="background:#ffffff; border:1px solid #eaeaea; border-radius:12px; padding:18px 20px;">
+            <div style="font-size:11px; color:#999999; text-transform:uppercase; letter-spacing:0.06em; font-weight:600;">{{ .Expense.Label }}</div>
+            <div style="font-size:22px; font-weight:600; letter-spacing:-0.02em; color:#0a0a0a; margin-top:8px; font-family:'SF Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">{{ .Expense.Amount }}</div>
+            {{ if .Expense.HasDelta }}<div style="font-size:12px; font-weight:500; margin-top:6px; {{ if .Expense.Up }}color:#dc2626{{ else }}color:#16a34a{{ end }};">{{ .Expense.DeltaText }}</div>{{ else }}<div style="font-size:12px; color:#a3a3a3; margin-top:6px;">no prior month</div>{{ end }}
           </div>
         </td>
       </tr>
@@ -37,8 +38,8 @@
 
     <!-- Charts -->
     {{ range .Charts }}
-    <div style="background:#ffffff; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08); margin-top:16px;">
-      <div style="font-size:15px; font-weight:bold; color:#1f2933; margin-bottom:12px;">{{ .Title }}</div>
+    <div style="background:#ffffff; border:1px solid #eaeaea; border-radius:12px; padding:20px; margin-top:12px;">
+      <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:#666666; margin-bottom:14px;">{{ .Title }}</div>
       <img src="{{ .Src }}" alt="{{ .Title }}" width="100%" style="max-width:100%; height:auto; display:block;">
     </div>
     {{ end }}
@@ -46,30 +47,34 @@
     <!-- Insights -->
     {{ if .HasInsights }}
     {{ if .Highlights }}
-    <div style="background:#ffffff; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08); margin-top:16px;">
-      <div style="font-size:15px; font-weight:bold; color:#1f2933; margin-bottom:10px;">Highlights</div>
-      <ul style="margin:0; padding-left:20px; color:#334155; font-size:14px; line-height:1.6;">
-        {{ range .Highlights }}<li>{{ . }}</li>{{ end }}
+    <div style="background:#ffffff; border:1px solid #eaeaea; border-radius:12px; padding:20px; margin-top:12px;">
+      <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:#666666; margin-bottom:12px;">
+        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#16a34a; margin-right:8px; vertical-align:middle;"></span>Highlights
+      </div>
+      <ul style="margin:0; padding-left:18px; color:#404040; font-size:14px; line-height:1.7;">
+        {{ range .Highlights }}<li style="margin-bottom:4px;">{{ . }}</li>{{ end }}
       </ul>
     </div>
     {{ end }}
     {{ if .Concerns }}
-    <div style="background:#ffffff; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08); margin-top:16px;">
-      <div style="font-size:15px; font-weight:bold; color:#b45309; margin-bottom:10px;">Concerns</div>
-      <ul style="margin:0; padding-left:20px; color:#334155; font-size:14px; line-height:1.6;">
-        {{ range .Concerns }}<li>{{ . }}</li>{{ end }}
+    <div style="background:#ffffff; border:1px solid #eaeaea; border-radius:12px; padding:20px; margin-top:12px;">
+      <div style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:#666666; margin-bottom:12px;">
+        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#d97706; margin-right:8px; vertical-align:middle;"></span>Concerns
+      </div>
+      <ul style="margin:0; padding-left:18px; color:#404040; font-size:14px; line-height:1.7;">
+        {{ range .Concerns }}<li style="margin-bottom:4px;">{{ . }}</li>{{ end }}
       </ul>
     </div>
     {{ end }}
     {{ if .Closing }}
-    <div style="background:#ffffff; border-radius:12px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.08); margin-top:16px;">
-      <div style="font-size:14px; line-height:1.6; color:#334155;">{{ .Closing }}</div>
+    <div style="background:#fafafa; border:1px solid #eaeaea; border-radius:12px; padding:18px 20px; margin-top:12px;">
+      <div style="font-size:14px; line-height:1.7; color:#525252;">{{ .Closing }}</div>
     </div>
     {{ end }}
     {{ end }}
 
     <!-- Footer -->
-    <div style="text-align:center; font-size:12px; color:#9aa5b1; margin-top:20px;">
+    <div style="text-align:center; font-size:12px; color:#a3a3a3; margin-top:24px; font-family:'SF Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;">
       generated by reports · {{ .GeneratedAt }}
     </div>
 

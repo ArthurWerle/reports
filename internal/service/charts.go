@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	chart "github.com/wcharczuk/go-chart/v2"
+	"github.com/wcharczuk/go-chart/v2/drawing"
 )
 
 // Chart names (also used as report_charts.name and cid: references).
@@ -20,6 +21,17 @@ const (
 	chartHeight = 420
 	topBuckets  = 8
 	labelMaxLen = 14
+)
+
+// Minimal, Vercel-style palette: solid zinc bars on a white canvas with hairline
+// axes, and refined green/red series for the history chart.
+var (
+	colorCanvas = drawing.ColorFromHex("ffffff")
+	colorBar    = drawing.ColorFromHex("3f3f46") // zinc-700
+	colorAxis   = drawing.ColorFromHex("71717a") // zinc-500 (labels)
+	colorGrid   = drawing.ColorFromHex("e4e4e7") // zinc-200 (hairlines)
+	colorGreen  = drawing.ColorFromHex("16a34a")
+	colorRed    = drawing.ColorFromHex("dc2626")
 )
 
 func truncateLabel(s string, max int) string {
@@ -66,29 +78,38 @@ func RenderBreakdownChart(title string, items []NamedTotal) ([]byte, error) {
 		return nil, nil
 	}
 
+	barStyle := chart.Style{FillColor: colorBar, StrokeColor: colorBar, StrokeWidth: 0}
 	bars := make([]chart.Value, 0, len(buckets))
 	maxVal := 0.0
 	for _, b := range buckets {
 		bars = append(bars, chart.Value{
 			Value: b.Total,
 			Label: truncateLabel(b.Name, labelMaxLen),
+			Style: barStyle,
 		})
 		if b.Total > maxVal {
 			maxVal = b.Total
 		}
 	}
 
+	axisStyle := chart.Style{FontColor: colorAxis, FontSize: 11, StrokeColor: colorGrid}
+
 	graph := chart.BarChart{
-		Title:      title,
-		TitleStyle: chart.Style{FontSize: 14},
-		Background: chart.Style{Padding: chart.Box{Top: 45, Left: 20, Right: 20, Bottom: 20}},
+		Background: chart.Style{
+			FillColor: colorCanvas,
+			Padding:   chart.Box{Top: 24, Left: 16, Right: 16, Bottom: 12},
+		},
+		Canvas:     chart.Style{FillColor: colorCanvas},
 		Width:      chartWidth,
 		Height:     chartHeight,
 		BarWidth:   int(float64(chartWidth-120) / float64(len(bars)+1)),
+		BarSpacing: 22,
 		Bars:       bars,
+		XAxis:      axisStyle,
 		// An explicit range anchored at 0 avoids go-chart's "invalid data
 		// range; cannot be zero" error when there is a single bar.
 		YAxis: chart.YAxis{
+			Style: axisStyle,
 			Range: &chart.ContinuousRange{Min: 0, Max: maxVal * 1.15},
 		},
 	}
@@ -118,29 +139,41 @@ func RenderHistoryChart(points []HistoryPoint) ([]byte, error) {
 		ticks[i] = chart.Tick{Value: float64(i), Label: p.Month}
 	}
 
+	axisStyle := chart.Style{FontColor: colorAxis, FontSize: 11, StrokeColor: colorGrid}
+
 	graph := chart.Chart{
-		Title:      "Income vs Expense",
-		TitleStyle: chart.Style{FontSize: 14},
-		Background: chart.Style{Padding: chart.Box{Top: 45, Left: 20, Right: 20, Bottom: 20}},
-		Width:      chartWidth,
-		Height:     chartHeight,
-		XAxis:      chart.XAxis{Ticks: ticks},
+		Background: chart.Style{
+			FillColor: colorCanvas,
+			Padding:   chart.Box{Top: 24, Left: 16, Right: 16, Bottom: 12},
+		},
+		Canvas: chart.Style{FillColor: colorCanvas},
+		Width:  chartWidth,
+		Height: chartHeight,
+		XAxis:  chart.XAxis{Style: axisStyle, Ticks: ticks},
+		YAxis:  chart.YAxis{Style: axisStyle},
 		Series: []chart.Series{
 			chart.ContinuousSeries{
 				Name:    "Income",
 				XValues: xs,
 				YValues: incomeYs,
-				Style:   chart.Style{StrokeColor: chart.ColorGreen, StrokeWidth: 2.5},
+				Style:   chart.Style{StrokeColor: colorGreen, StrokeWidth: 2.5},
 			},
 			chart.ContinuousSeries{
 				Name:    "Expense",
 				XValues: xs,
 				YValues: expenseYs,
-				Style:   chart.Style{StrokeColor: chart.ColorRed, StrokeWidth: 2.5},
+				Style:   chart.Style{StrokeColor: colorRed, StrokeWidth: 2.5},
 			},
 		},
 	}
-	graph.Elements = []chart.Renderable{chart.Legend(&graph)}
+	graph.Elements = []chart.Renderable{
+		chart.Legend(&graph, chart.Style{
+			FontColor:   colorAxis,
+			FontSize:    11,
+			FillColor:   colorCanvas,
+			StrokeColor: colorGrid,
+		}),
+	}
 
 	var buf bytes.Buffer
 	if err := graph.Render(chart.PNG, &buf); err != nil {

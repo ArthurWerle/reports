@@ -3,82 +3,200 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
   <title>Reports</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Geist:wght@400;450;500;600&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --bg: #0a0a0b;
+      --card: #111113;
+      --panel: #161618;
+      --border: #232327;
+      --border-strong: #333338;
+      --fg: #f4f4f5;
+      --muted: #a1a1aa;
+      --faint: #6b6b74;
+      --green: #4ade80;
+      --blue: #60a5fa;
+      --amber: #fbbf24;
+      --red: #f87171;
+      --radius: 10px;
+      --sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      --mono: 'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+    }
     * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--fg);
       min-height: 100vh;
-      color: #1f2933;
-      padding: 24px 16px;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: 'cv01', 'cv03';
+      padding: 40px 20px 64px;
     }
-    .container { max-width: 1000px; margin: 0 auto; }
-    h1 { color: #fff; text-shadow: 0 2px 6px rgba(0,0,0,0.25); margin: 0 0 4px; }
-    .subtitle { color: rgba(255,255,255,0.85); margin-bottom: 24px; }
-    .card {
-      background: #fff; border-radius: 12px; padding: 22px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.15); margin-bottom: 20px;
+    ::selection { background: rgba(255,255,255,0.14); }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
+
+    .container { max-width: 1040px; margin: 0 auto; }
+
+    /* Header */
+    .header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+    .title { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin: 0; display: flex; align-items: center; gap: 10px; }
+    .title .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(74,222,128,0.14); }
+    .subtitle { color: var(--muted); font-size: 13.5px; margin-top: 6px; }
+    .live-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-family: var(--mono); font-size: 11px; letter-spacing: 0.02em; color: var(--faint);
+      border: 1px solid var(--border); background: var(--card); border-radius: 8px; padding: 6px 10px;
+      min-height: 30px;
     }
-    .card h2 { margin: 0 0 16px; font-size: 18px; }
-    label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #7b8794; margin: 10px 0 4px; }
+    .live-chip .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--faint); }
+    .live-chip.active .pulse { background: var(--blue); animation: pulse 1.4s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+    /* Card */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 20px; }
+    .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .card-head h2 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+    .card-head .hint { font-size: 12px; color: var(--faint); }
+    .section-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--faint); margin: 4px 0 14px; }
+
+    /* Forms */
+    label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint); font-weight: 500; margin: 0 0 6px; }
     input[type=text], input[type=number] {
-      width: 100%; padding: 9px 11px; border: 1px solid #cbd2d9; border-radius: 8px; font-size: 14px;
+      width: 100%; padding: 9px 11px; font-size: 13.5px; font-family: var(--sans);
+      background: var(--bg); color: var(--fg);
+      border: 1px solid var(--border-strong); border-radius: 8px; outline: none;
+      transition: border-color .12s ease, box-shadow .12s ease;
     }
-    .row { display: flex; gap: 14px; flex-wrap: wrap; }
-    .row > div { flex: 1; min-width: 120px; }
-    .report-block { border: 1px solid #e4e7eb; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+    input::placeholder { color: #45454c; }
+    input:focus { border-color: #52525b; box-shadow: 0 0 0 3px rgba(120,120,130,0.14); }
+    input[type=number] { font-family: var(--mono); }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .row > div { flex: 1; min-width: 110px; }
+    .field { margin-top: 12px; }
+
+    /* Report block */
+    .report-block { border: 1px solid var(--border); background: var(--panel); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+    .report-block:last-child { margin-bottom: 0; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+
+    /* Buttons */
     .btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #fff; border: none; border-radius: 8px; padding: 9px 16px; font-size: 14px;
-      cursor: pointer; margin-top: 12px; margin-right: 8px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      font-family: var(--sans); font-size: 13px; font-weight: 500; line-height: 1;
+      padding: 9px 14px; border-radius: 8px; border: 1px solid transparent; cursor: pointer;
+      transition: background .12s ease, border-color .12s ease, opacity .12s ease; white-space: nowrap;
     }
-    .btn.secondary { background: #e4e7eb; color: #1f2933; }
-    .btn:hover { opacity: 0.92; }
-    .inline { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #eef1f4; }
-    th { font-size: 12px; text-transform: uppercase; color: #7b8794; }
-    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-    .badge.pending { background: #fff3cd; color: #856404; }
-    .badge.running { background: #cfe2ff; color: #084298; }
-    .badge.success { background: #d1e7dd; color: #0f5132; }
-    .badge.failed  { background: #f8d7da; color: #842029; }
-    .muted { color: #9aa5b1; font-size: 13px; }
-    a { color: #5a4bd0; }
-    .err { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b91c1c; }
+    .btn-primary { background: #fafafa; color: #0a0a0a; }
+    .btn-primary:hover { background: #e4e4e7; }
+    .btn-ghost { background: transparent; color: var(--fg); border-color: var(--border-strong); }
+    .btn-ghost:hover { background: #1c1c1f; border-color: #45454c; }
+    .btn-danger { background: transparent; color: var(--red); border-color: var(--border-strong); }
+    .btn-danger:hover { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.4); }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+
+    /* Toggle switch */
+    .toggle { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; margin-top: 14px; }
+    .toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .toggle .track { width: 34px; height: 20px; border-radius: 999px; background: var(--border-strong); position: relative; transition: background .15s ease; flex: none; }
+    .toggle .track::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fafafa; transition: transform .15s ease; }
+    .toggle input:checked + .track { background: var(--green); }
+    .toggle input:checked + .track::after { transform: translateX(14px); }
+    .toggle .toggle-label { font-size: 13px; color: var(--muted); text-transform: none; letter-spacing: 0; margin: 0; }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; margin: 0 -4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      text-align: left; padding: 8px 12px; font-size: 10.5px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em; color: var(--faint);
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    tbody td { padding: 11px 12px; border-bottom: 1px solid var(--border); color: var(--muted); vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(255,255,255,0.018); }
+    td.mono, .mono { font-family: var(--mono); font-size: 12.5px; color: var(--fg); }
+    td.num { font-family: var(--mono); color: var(--fg); }
+
+    /* Status badge */
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px 3px 8px;
+      border-radius: 999px; font-size: 11.5px; font-weight: 500; text-transform: capitalize;
+      border: 1px solid transparent;
+    }
+    .badge .bdot { width: 6px; height: 6px; border-radius: 50%; }
+    .badge.pending { color: var(--amber); background: rgba(251,191,36,0.09); border-color: rgba(251,191,36,0.2); }
+    .badge.pending .bdot { background: var(--amber); }
+    .badge.running { color: var(--blue); background: rgba(96,165,250,0.1); border-color: rgba(96,165,250,0.22); }
+    .badge.running .bdot { background: var(--blue); animation: pulse 1.4s ease-in-out infinite; }
+    .badge.success { color: var(--green); background: rgba(74,222,128,0.09); border-color: rgba(74,222,128,0.2); }
+    .badge.success .bdot { background: var(--green); }
+    .badge.failed { color: var(--red); background: rgba(248,113,113,0.09); border-color: rgba(248,113,113,0.22); }
+    .badge.failed .bdot { background: var(--red); }
+
+    .muted { color: var(--faint); font-size: 12.5px; }
+    .err { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--red); font-family: var(--mono); font-size: 12px; }
+    .link { color: var(--fg); text-decoration: none; border-bottom: 1px solid var(--border-strong); padding-bottom: 1px; transition: border-color .12s ease; }
+    .link:hover { border-color: var(--fg); }
+    .empty { color: var(--faint); font-size: 13px; padding: 24px 4px; text-align: center; }
+    .dash { color: var(--faint); }
+    .check { color: var(--green); }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>📊 Reports</h1>
-    <div class="subtitle">Monthly financial report configuration and run history.</div>
-
-    <div class="card">
-      <h2>Report configs</h2>
-      <div id="reports"></div>
-      <hr style="border:none;border-top:1px solid #eef1f4;margin:18px 0;">
-      <h2>Add a report</h2>
-      <div class="row">
-        <div><label>Name</label><input type="text" id="new-name" value="Monthly report"></div>
-        <div><label>Day of month (1-28)</label><input type="number" id="new-day" min="1" max="28" value="1"></div>
-        <div><label>Hour (0-23)</label><input type="number" id="new-hour" min="0" max="23" value="8"></div>
+    <div class="header">
+      <div>
+        <h1 class="title"><span class="dot"></span>Reports</h1>
+        <div class="subtitle">Monthly financial report configuration and run history.</div>
       </div>
-      <label>Recipients (comma-separated)</label>
-      <input type="text" id="new-recipients" placeholder="you@example.com, partner@example.com">
-      <button class="btn" onclick="createReport()">Add report</button>
+      <div class="live-chip" id="live-chip"><span class="pulse"></span><span id="live-text">idle</span></div>
     </div>
 
     <div class="card">
-      <h2>Executions</h2>
-      <div id="exec-status" class="muted"></div>
-      <table>
-        <thead>
-          <tr><th>ID</th><th>Period</th><th>Trigger</th><th>Status</th><th>Duration</th><th>Email</th><th>Error</th><th>Report</th></tr>
-        </thead>
-        <tbody id="executions"></tbody>
-      </table>
+      <div class="card-head">
+        <h2>Report configs</h2>
+        <span class="hint">Scheduled monthly emails</span>
+      </div>
+      <div id="reports"></div>
+
+      <hr class="divider">
+
+      <div class="section-label">Add a report</div>
+      <div class="row">
+        <div><label>Name</label><input type="text" id="new-name" value="Monthly report"></div>
+        <div><label>Day of month (1–28)</label><input type="number" id="new-day" min="1" max="28" value="1"></div>
+        <div><label>Hour (0–23)</label><input type="number" id="new-hour" min="0" max="23" value="8"></div>
+      </div>
+      <div class="field">
+        <label>Recipients (comma-separated)</label>
+        <input type="text" id="new-recipients" placeholder="you@example.com, partner@example.com">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="createReport()">Add report</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Executions</h2>
+        <span class="hint" id="exec-status"></span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Period</th><th>Trigger</th><th>Status</th><th>Duration</th><th>Email</th><th>Error</th><th>Report</th></tr>
+          </thead>
+          <tbody id="executions"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -98,6 +216,10 @@
       const reports = await api('/api/v1/reports');
       const container = document.getElementById('reports');
       container.innerHTML = '';
+      if (!reports.length) {
+        container.innerHTML = '<div class="empty">No reports configured yet. Add one below.</div>';
+        return;
+      }
       reports.forEach(rep => {
         const div = document.createElement('div');
         div.className = 'report-block';
@@ -107,28 +229,22 @@
             <div><label>Day of month</label><input type="number" id="day-${rep.id}" min="1" max="28" value="${rep.day_of_month}"></div>
             <div><label>Hour</label><input type="number" id="hour-${rep.id}" min="0" max="23" value="${rep.hour}"></div>
           </div>
-          <label>Recipients (comma-separated)</label>
-          <input type="text" id="recipients-${rep.id}" value="${esc(rep.recipients)}">
-          <div class="inline">
-            <input type="checkbox" id="enabled-${rep.id}" ${rep.enabled ? 'checked' : ''}>
-            <label style="margin:0;">Enabled</label>
+          <div class="field">
+            <label>Recipients (comma-separated)</label>
+            <input type="text" id="recipients-${rep.id}" value="${esc(rep.recipients)}">
           </div>
-          <div>
-            <button class="btn" onclick="saveReport(${rep.id})">Save</button>
-            <button class="btn secondary" onclick="runNow(${rep.id})">Run now</button>
-            <button class="btn secondary" onclick="deleteReport(${rep.id})">Delete</button>
+          <label class="toggle">
+            <input type="checkbox" id="enabled-${rep.id}" ${rep.enabled ? 'checked' : ''}>
+            <span class="track"></span>
+            <span class="toggle-label">Enabled</span>
+          </label>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="saveReport(${rep.id})">Save</button>
+            <button class="btn btn-ghost" onclick="runNow(${rep.id})">Run now</button>
+            <button class="btn btn-danger" onclick="deleteReport(${rep.id})">Delete</button>
           </div>`;
         container.appendChild(div);
       });
-    }
-
-    function reportBody(prefix) {
-      return {
-        name: document.getElementById(prefix + 'name').value,
-        day_of_month: parseInt(document.getElementById(prefix + 'day').value, 10),
-        hour: parseInt(document.getElementById(prefix + 'hour').value, 10),
-        recipients: document.getElementById(prefix + 'recipients').value,
-      };
     }
 
     async function createReport() {
@@ -168,9 +284,17 @@
     }
 
     function fmtDuration(ms) {
-      if (ms == null) return '—';
+      if (ms == null) return '<span class="dash">—</span>';
       if (ms < 1000) return ms + 'ms';
       return (ms / 1000).toFixed(1) + 's';
+    }
+
+    function setLive(active) {
+      const chip = document.getElementById('live-chip');
+      const text = document.getElementById('live-text');
+      chip.classList.toggle('active', active);
+      text.textContent = active ? 'running' : 'idle';
+      document.getElementById('exec-status').textContent = active ? 'Refreshing while runs are in progress…' : '';
     }
 
     async function loadExecutions() {
@@ -178,22 +302,27 @@
       const tbody = document.getElementById('executions');
       tbody.innerHTML = '';
       let active = false;
+      if (!execs.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="empty">No executions yet.</td></tr>';
+        setLive(false);
+        return false;
+      }
       execs.forEach(e => {
         if (e.status === 'pending' || e.status === 'running') active = true;
         const period = String(e.period_year) + '-' + String(e.period_month).padStart(2, '0');
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${e.id}</td>
-          <td>${period}</td>
+          <td class="num">${e.id}</td>
+          <td class="mono">${period}</td>
           <td>${esc(e.trigger)}</td>
-          <td><span class="badge ${esc(e.status)}">${esc(e.status)}</span></td>
-          <td>${fmtDuration(e.duration_ms)}</td>
-          <td>${e.email_sent_at ? '✓' : '—'}</td>
+          <td><span class="badge ${esc(e.status)}"><span class="bdot"></span>${esc(e.status)}</span></td>
+          <td class="num">${fmtDuration(e.duration_ms)}</td>
+          <td>${e.email_sent_at ? '<span class="check">✓</span>' : '<span class="dash">—</span>'}</td>
           <td class="err" title="${esc(e.error_message)}">${esc(e.error_message || '')}</td>
-          <td><a href="/api/v1/executions/${e.id}/html" target="_blank">View</a></td>`;
+          <td><a class="link" href="/api/v1/executions/${e.id}/html" target="_blank">View</a></td>`;
         tbody.appendChild(tr);
       });
-      document.getElementById('exec-status').textContent = active ? 'Refreshing while runs are in progress…' : '';
+      setLive(active);
       return active;
     }
 
