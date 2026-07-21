@@ -28,7 +28,7 @@ services:
     networks:
       - reports-network
 
-  reports:
+  reports-staging:
     build:
       context: .
       dockerfile: Dockerfile
