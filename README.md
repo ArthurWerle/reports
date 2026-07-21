@@ -56,7 +56,7 @@ All have defaults (via `getEnv`); override in `stack.env`.
 | `SCHEDULER_ENABLED` | `true` | set `false` to run API/UI without the ticker (useful in staging) |
 | `REPORT_LANGUAGE` | `en` | passed to `/report-insights` |
 | `REPORT_CURRENCY` | `BRL` | display formatting in the HTML (e.g. `R$ 1.234,56`) |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_FROM` | — | email delivery (empty disables email with a logged warning; the execution still succeeds and stores the report) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_FROM` | — | email delivery. **Email is required for a generation to succeed** — `SMTP_HOST`, `SMTP_PORT`, and `SMTP_FROM` must all be set, otherwise every generation fails with `email not sent: SMTP not configured` (the report HTML is still stored and viewable in the UI). `SMTP_USERNAME` / `SMTP_PASSWORD` are optional (leave empty for an auth-less local relay). |
 
 ## HTTP API
 

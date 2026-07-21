@@ -33,6 +33,13 @@ func main() {
 	logger := setupLogger(cfg.Log.Level)
 	logger.Info("starting reports service")
 
+	// Email is mandatory for a generation to succeed, so surface a missing SMTP
+	// config once at startup rather than only per failed job. The service still
+	// boots (stored reports remain viewable in the UI).
+	if !cfg.SMTP.Configured() {
+		logger.Warn("SMTP not configured (SMTP_HOST/SMTP_PORT/SMTP_FROM); every report generation will fail at the email step")
+	}
+
 	db, err := setupDatabase(cfg, logger)
 	if err != nil {
 		logger.Error("failed to setup database", "error", err)

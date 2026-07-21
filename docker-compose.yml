@@ -38,6 +38,7 @@ services:
     networks:
       - reports-network
       - financer-transactions_transactions-network
+      - bff_back-end
 
 volumes:
   postgres_data:
@@ -49,4 +50,8 @@ networks:
   # join, so reports reaches them (and the events callback reaches reports) by
   # container name.
   financer-transactions_transactions-network:
+    external: true
+  # ai-internal (prod) also joins this bff network; reports uses it to reach
+  # ai-internal at http://ai-internal:3005. Staging uses staging_bff_back-end.
+  bff_back-end:
     external: true

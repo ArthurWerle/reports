@@ -44,6 +44,7 @@ services:
     networks:
       - reports-network
       - financer-transactions_transactions-network
+      - staging_bff_back-end
 
 volumes:
   postgres_data:
@@ -52,4 +53,9 @@ networks:
   reports-network:
     driver: bridge
   financer-transactions_transactions-network:
+    external: true
+  # ai-internal-staging joins this staging bff network; reports-staging uses it
+  # to reach ai-internal-staging. Kept distinct from prod's bff_back-end so the
+  # environments don't share DNS aliases.
+  staging_bff_back-end:
     external: true
