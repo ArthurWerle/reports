@@ -18,9 +18,14 @@ const (
 
 const (
 	chartWidth  = 900
-	chartHeight = 420
-	topBuckets  = 8
-	labelMaxLen = 14
+	chartHeight = 460
+	topBuckets  = 6
+	labelMaxLen = 13
+	// go-chart's BarChart reserves roughly 2×Padding.Bottom for the x-axis
+	// labels below the bars (a quirk of how it constrains the canvas box), so
+	// this needs to be generous enough that category names — including ones
+	// that wrap onto a second line — are never clipped.
+	barLabelPadding = 52
 )
 
 // Minimal, Vercel-style palette: solid zinc bars on a white canvas with hairline
@@ -97,7 +102,7 @@ func RenderBreakdownChart(title string, items []NamedTotal) ([]byte, error) {
 	graph := chart.BarChart{
 		Background: chart.Style{
 			FillColor: colorCanvas,
-			Padding:   chart.Box{Top: 24, Left: 16, Right: 16, Bottom: 12},
+			Padding:   chart.Box{Top: 24, Left: 16, Right: 16, Bottom: barLabelPadding},
 		},
 		Canvas:     chart.Style{FillColor: colorCanvas},
 		Width:      chartWidth,

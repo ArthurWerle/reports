@@ -54,9 +54,12 @@ func TestTopNWithOtherRollup(t *testing.T) {
 	if last.Name != "Other" {
 		t.Errorf("expected last bucket 'Other', got %q", last.Name)
 	}
-	// The 2 smallest (2 + 1) roll into Other.
-	if last.Total != 3 {
-		t.Errorf("Other total = %v, want 3", last.Total)
+	// The values (10-topBuckets)..1 roll into Other; derive the expected sum
+	// from topBuckets so this stays correct if the constant changes.
+	k := 10 - topBuckets
+	want := float64(k * (k + 1) / 2)
+	if last.Total != want {
+		t.Errorf("Other total = %v, want %v", last.Total, want)
 	}
 }
 
